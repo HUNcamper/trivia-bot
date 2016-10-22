@@ -18,7 +18,8 @@ const correctTime = answerTime * 1000; // Miliseconds
 
 var stillGoing = false; // Is a trivia in progress?
 var correctNum = 0; // The correct answer's number. Global, so we can check in the answer function.
-var maxNum = 0; // The biggest number a user can respond with. Global, see above.
+var maxNum = 0; // The biggest number a user can respond with. Global, see above.i
+var quizChannel; // Current channel the quiz is going in
 var timer; // Timer for the trivia timeout
 
 // Functions
@@ -39,7 +40,9 @@ bot.on('ready', () => {
 });
 
 bot.on('message', message => {
-	if (stillGoing && message.content.split(" ")[0] == answerTrigger) {
+	if (stillGoing && message.content.split(" ")[0] == answerTrigger && message.channel != quizChannel) {
+			message.reply('You must reply to the Trivia at ' + quizChannel);
+	} else if (stillGoing && message.content.split(" ")[0] == answerTrigger) {
 		messageSplit = message.content.split(" ");
 		var currChannel = message.channel;
 		// If second argument is defined
@@ -67,8 +70,10 @@ bot.on('message', message => {
 	}
 	if (message.content === trigger) {
 		var currChannel = message.channel;
-		if (stillGoing) {
-			message.reply('Sorry, but a Trivia is already going!');
+		if (stillGoing && message.channel != quizChannel) {
+			message.reply('A Trivia is already going in ' + quizChannel);
+		} else if (stillGoing) {
+			message.reply('Sorry, but a Trivia is already going!'); 
 		} else {
 		
 		// Fetch the JSON
@@ -78,6 +83,7 @@ bot.on('message', message => {
 		}, function(error, response, body) {
 			if (!error && response.statusCode === 200) {
 				stillGoing = true;
+				quizChannel = currChannel;
 				var triviaMessage = 'Category: *' + escapeHtml(body.results[0].category) + '*, Difficulty: *' + body.results[0].difficulty + '*\n__**' + escapeHtml(body.results[0].question) + '**__';
 				correctNum = Math.floor((Math.random() * body.results[0].incorrect_answers.length) + 1);
 				maxNum = body.results[0].incorrect_answers.length+1;
@@ -99,8 +105,8 @@ bot.on('message', message => {
 					stillGoing = false;
 				}, correctTime);
 			} else {
-				message.reply('Sorry, I failed to connect to the trivia database :(');
-				console.log('Failed to fetch from trivia database. Response code was: ' + response.statusCode);
+				message.reply('Sorry, I failed to connect to the Open Trivia Database :(');
+				console.log('Failed to fetch from OTD. Response code was: ' + response.statusCode);
 			}
 		});
 		}
