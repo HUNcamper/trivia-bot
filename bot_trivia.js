@@ -24,17 +24,14 @@ var timer; // Timer for the trivia timeout
 // Functions
 
 // Escape HTML
-function escapeHtml(text) {
-	var map = {
-		'&': '&amp;',
-		'<': '&lt;',
-		'>': '&gt;',
-		'"': '&quot;',
-		"'": '&#039;'
-	};
 
-	return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-}
+var escapeHtml = function(str) {
+	return str.replace(/&#(\d+);/g, function(match, dec) {
+		return String.fromCharCode(dec);
+	});
+};
+
+// Main
 
 bot.on('ready', () => {
 	console.log('Bot Ready');
@@ -42,7 +39,7 @@ bot.on('ready', () => {
 });
 
 bot.on('message', message => {
-	if (stillGoing && message.content.split(" ")[0] == trigger) {
+	if (stillGoing && message.content.split(" ")[0] == answerTrigger) {
 		messageSplit = message.content.split(" ");
 		var currChannel = message.channel;
 		// If second argument is defined
