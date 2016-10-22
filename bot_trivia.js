@@ -11,11 +11,30 @@ const trigger = '!quiz'; // The message to trigger the quiz
 const answerTrigger = '!a'; // The trigger for the answer message
 const answerTime = 15; // time in seconds to answer a quiz question
 const url = "http://opentdb.com/api.php?amount=1"; // Trivia DB url to fetch the JSON from.
+const correctTime = answerTime * 1000; // Miliseconds		
+				
+
+// Variables
 
 var stillGoing = false; // Is a trivia in progress?
 var correctNum = 0; // The correct answer's number. Global, so we can check in the answer function.
 var maxNum = 0; // The biggest number a user can respond with. Global, see above.
 var timer; // Timer for the trivia timeout
+
+// Functions
+
+// Escape HTML
+function escapeHtml(text) {
+	var map = {
+		'&': '&amp;',
+		'<': '&lt;',
+		'>': '&gt;',
+		'"': '&quot;',
+		"'": '&#039;'
+	};
+
+	return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
 
 bot.on('ready', () => {
 	console.log('Bot Ready');
@@ -62,23 +81,21 @@ bot.on('message', message => {
 		}, function(error, response, body) {
 			if (!error && response.statusCode === 200) {
 				stillGoing = true;
-				var triviaMessage = 'Category: *' + body.results[0].category + '*, Difficulty: *' + body.results[0].difficulty + '*\n__**' + body.results[0].question + '**__';
+				var triviaMessage = 'Category: *' + escapeHtml(body.results[0].category) + '*, Difficulty: *' + body.results[0].difficulty + '*\n__**' + escapeHtml(body.results[0].question) + '**__';
 				correctNum = Math.floor((Math.random() * body.results[0].incorrect_answers.length) + 1);
 				maxNum = body.results[0].incorrect_answers.length+1;
 				var b = -1;
 				for(var i = 1; i < body.results[0].incorrect_answers.length+2; i++) {
 					if (i == correctNum) {
-						triviaMessage += '\n**[ ' + i + ' ]** ' + body.results[0].correct_answer;
+						triviaMessage += '\n**[ ' + i + ' ]** ' + escapeHtml(body.results[0].correct_answer);
 					} else {
 						b++;
-						triviaMessage += '\n**[ ' + i + ' ]** ' + body.results[0].incorrect_answers[b];
+						triviaMessage += '\n**[ ' + i + ' ]** ' + escapeHtml(body.results[0].incorrect_answers[b]);
 					}
 				}
 				triviaMessage += '\nTime remaining: ' + answerTime + ' seconds\nSend the answer: ' + answerTrigger + '  <number>';
 				
 				currChannel.sendMessage(triviaMessage);
-				
-				var correctTime = answerTime * 1000; // Miliseconds, duh
 				
 				timer = setTimeout(function() {
 					currChannel.sendMessage('__**Time is up, the Trivia is over!**__\nThe correct answer was: **' + body.results[0].correct_answer + '**');
