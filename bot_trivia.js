@@ -20,6 +20,7 @@ var correctNum = 0; // The correct answer's number. Global, so we can check in t
 var maxNum = 0; // The biggest number a user can respond with. Global, see above.i
 var quizChannel; // Current channel the quiz is going in
 var timer; // Timer for the trivia timeout
+var currDiff = ''; // '' for random, 'easy', 'medium', 'hard', can be set with "setDifficulty" command.
 
 // Commands
 
@@ -27,8 +28,14 @@ const commands = [
 //	TRIGGER			FUNCTION
 	['!quiz',		'quizTrigger'],
 	['!a',			'answerTrigger'],
-	['!setdiff',	'setDifficulty']
+	['!diff',		'setDifficulty']
 ];
+
+/*
+const translation = [
+
+];
+*/
 
 // NOTE: YOU SHOULD NOT REMOVE ANY OF THE ABOVE FUNCTIONS, ONLY MODIFY THEIR TRIGGERS!
 // - IF YOU DO REMOVE ANYTHING, IT WILL BREAK THE BOT! MODIFY AT YOUR OWN RISK!
@@ -95,8 +102,8 @@ function checkAnswer(message) {
 	var err = '';
 	var msg = message.content.split(" ");
 	var arg1 = parseInt(msg[1]);
-	if(stillGoing && message.channel != quizChannel) 			err='The quiz is going in ' + quizChannel + ' !';
-	else if(!stillGoing) 										err='No quiz is currently going! Start one with !quiz.';
+	if(stillGoing && message.channel != quizChannel)			err='The quiz is going in ' + quizChannel + ' !';
+	else if(!stillGoing)										err='No quiz is currently going! Start one with !quiz.';
 	else if(typeof msg[1] === 'undefined')						err='No answer was given';
 	else if(isNaN(msg[1]))										err='Answer is not a number';
 	else if(arg1 < 1)											err='Answer is too small';
@@ -106,6 +113,12 @@ function checkAnswer(message) {
 	if(err != '') {
 		message.reply(err);
 	}
+}
+
+function checkArguments(message, minargs) {
+	var msg = message.content.split(" ");
+	if(typeof msg[minargs] === 'undefined') return false;
+	return true;
 }
 
 // Main
@@ -126,7 +139,7 @@ bot.on('message', message => {
 		if(currCommand == "quizTrigger") {
 			if(checkQuiz(message)) {
 				request({
-					url: url,
+					url: url+currDiff,
 					json: true
 				}, function(error, response, body) {
 					if (!error && response.statusCode === 200) {
@@ -169,6 +182,27 @@ bot.on('message', message => {
 				} else {
 					message.reply('Incorrect answer! Try again!');
 				}
+			}
+		} else if(currCommand == "setDifficulty") {
+			if(typeof currMessage[1] !== 'undefined') {
+				// First argument
+				switch(currMessage[1]) {
+					case 'random':
+						currDiff = '';
+						message.channel.sendMessage('Set difficulty to **random**');
+						break;
+					case 'easy':
+					case 'medium':
+					case 'hard':
+						currDiff = '&difficulty=' + currMessage[1];
+						message.channel.sendMessage('Set difficulty to **' + currMessage[1] + '**');
+						break;
+					default:
+						message.reply('Usage: **' + getCommand('setDifficulty') + ' <random|easy|medium|hard>**');
+				}
+			} else {
+				var xDiff = (currDiff == '') ? 'random' : currDiff;
+				message.channel.sendMessage('Current difficulty: **' + xDiff + '**\nTo change: **' + getCommand('setDifficulty') + ' <random|easy|medium|hard>**');
 			}
 		}
 	}
